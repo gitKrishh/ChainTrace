@@ -9,7 +9,7 @@ See ARCHITECTURE.md §ml/ and DATASET.md §7.2.
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import joblib
@@ -56,7 +56,7 @@ class AnomalyDetector:
             n_estimators: Number of trees in the isolation forest.
             random_state: Random seed for reproducibility.
         """
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
         self.model_version = model_version or f"iforest_v1_{timestamp}"
         self.is_fitted: bool = False
 
@@ -189,7 +189,7 @@ class AnomalyDetector:
             "contamination": self._contamination,
             "n_estimators": self._n_estimators,
             "random_state": self._random_state,
-            "saved_at": datetime.now(timezone.utc).isoformat(),
+            "saved_at": datetime.now(UTC).isoformat(),
         }
 
         with open(metadata_path, "w") as f:

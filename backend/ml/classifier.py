@@ -9,7 +9,7 @@ See ARCHITECTURE.md §ml/ and AGENTS.md §7.
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import joblib
@@ -60,7 +60,7 @@ class TransactionClassifier:
             random_state: Random seed for reproducibility.
             class_weight: Class weighting strategy.
         """
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
         self.model_version = model_version or f"rf_{feature_set_name}_v1_{timestamp}"
         self.feature_set_name = feature_set_name
         self.feature_names: list[str] = []
@@ -180,12 +180,8 @@ class TransactionClassifier:
         self._check_fitted()
         importances = self._model.feature_importances_
 
-        if self.feature_names:
-            names = self.feature_names
-        else:
-            names = [f"feature_{i}" for i in range(len(importances))]
-
-        importance_dict = dict(zip(names, importances))
+        names = self.feature_names or [f"feature_{i}" for i in range(len(importances))]
+        importance_dict = dict(zip(names, importances, strict=False))
         # Sort by descending importance
         return dict(sorted(importance_dict.items(), key=lambda x: x[1], reverse=True))
 
@@ -266,11 +262,13 @@ class TransactionClassifier:
             "model_version": self.model_version,
             "feature_set_name": self.feature_set_name,
             "feature_names": self.feature_names,
-            "n_features": len(self.feature_names) if self.feature_names else self._model.n_features_in_,
+            "n_features": (
+                len(self.feature_names) if self.feature_names else self._model.n_features_in_
+            ),
             "n_estimators": self._n_estimators,
             "random_state": self._random_state,
             "class_weight": self._class_weight,
-            "saved_at": datetime.now(timezone.utc).isoformat(),
+            "saved_at": datetime.now(UTC).isoformat(),
         }
 
         if experiment_config is not None:
@@ -387,7 +385,7 @@ def _serialize_metrics(metrics: dict) -> dict:
     for k, v in metrics.items():
         if isinstance(v, np.ndarray):
             result[k] = v.tolist()
-        elif isinstance(v, (np.integer, np.floating)):
+        elif isinstance(v, np.integer | np.floating):
             result[k] = v.item()
         else:
             result[k] = v
